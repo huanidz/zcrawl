@@ -6,14 +6,15 @@ Cung cấp các chức năng chung và quản lý trình duyệt.
 import asyncio
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import List, Optional
 
 from loguru import logger
 from playwright.async_api import BrowserContext, Page, Response
 
 from ..browser.browser_config import BrowserConfig, ConfigType, get_browser_config
 from ..browser.browser_instance import BrowserInstance
-from ..models.CrawlResult import CrawlResult
+from ..models.CrawlResult import CrawlResult, NavigableLink
+from ..utils.navigation import extract_navigable_links
 
 
 class BaseCrawler(ABC):
@@ -361,6 +362,21 @@ class BaseCrawler(ABC):
         actual_timeout = timeout or self.browser_config.timeout
 
         return await page.wait_for_load_state(wait_until, timeout=actual_timeout)
+
+    async def extract_navigable_links(
+        self, html: str, base_url: Optional[str] = None
+    ) -> List[NavigableLink]:
+        """
+        Trích xuất tất cả các liên kết có thể điều hướng từ HTML.
+
+        Args:
+            html (str): Nội dung HTML cần phân tích
+            base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
+
+        Returns:
+            List[NavigableLink]: Danh sách các liên kết có thể điều hướng
+        """
+        return extract_navigable_links(html, base_url)
 
     @abstractmethod
     async def crawl(self, url: str, **kwargs) -> CrawlResult:

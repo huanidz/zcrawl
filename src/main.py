@@ -15,21 +15,16 @@ async def main():
     """
     print("Starting web crawler...")
 
-    # Ensure Chromium is installed
-    # if not ensure_chromium_installed():
-    #     print("Failed to install Chromium. Exiting...")
-    #     sys.exit(1)
-
     print("Chromium driver is ready.")
 
     # Tạo SinglePageCrawler instance
     crawler = SinglePageCrawler(auto_start=False)
 
     try:
-        # Crawl example.com
-        print("Đang crawl example.com...")
+        SAMPLE_URL = "https://vnexpress.net/can-bo-cong-chuc-khong-dap-ung-nhiem-vu-se-bi-cho-nghi-4947205.html"
+        print(f"Đang crawl {SAMPLE_URL}...")
         await crawler.start()
-        result = await crawler.crawl("https://example.com")
+        result = await crawler.crawl(SAMPLE_URL)
 
         # In kết quả
         print(f"URL: {result.url}")
@@ -45,4 +40,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Ensure Chromium is installed
+    if not ensure_chromium_installed():
+        print("Failed to install Chromium. Exiting...")
+        sys.exit(1)
+
     asyncio.run(main())

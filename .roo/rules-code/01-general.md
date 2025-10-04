@@ -5,4 +5,5 @@
 4. Aim for async
 5. Code must follow proper format and type annotation.
 6. Always use pydantic for data model
-7. Always speak in Vietnamese
+7. Use loguru's logger for logging
+8. Always speak in Vietnamese

@@ -89,9 +89,13 @@ class SinglePageCrawler(BaseCrawler):
             # Tạo kết quả
             result = CrawlResult(url=url, raw_html=html_content)
 
-            logger.info(
-                f"Đã crawl thành công URL: {url}, HTML length: {len(html_content)}"
-            )
+            navigable_links = await self.extract_navigable_links(html_content, url)
+            result.navigable_links = navigable_links
+            logger.info(f"👉 result: {result.model_dump_json(indent=2)}")
+
+            # logger.info(
+            #     f"Đã crawl thành công URL: {url}, HTML length: {len(html_content)}"
+            # )
             return result
 
         except Exception as e:
