@@ -13,7 +13,8 @@ from playwright.async_api import BrowserContext, Page, Response
 
 from ..browser.browser_config import BrowserConfig, ConfigType, get_browser_config
 from ..browser.browser_instance import BrowserInstance
-from ..models.CrawlResult import CrawlResult, NavigableLink
+from ..models.CrawlResult import CrawledImage, NavigableLink, PageCrawlResult
+from ..utils.image import extract_images
 from ..utils.navigation import extract_navigable_links
 
 
@@ -378,8 +379,23 @@ class BaseCrawler(ABC):
         """
         return extract_navigable_links(html, base_url)
 
+    async def extract_images(
+        self, html: str, base_url: Optional[str] = None
+    ) -> List[CrawledImage]:
+        """
+        Trích xuất tất cả các hình ảnh từ HTML.
+
+        Args:
+            html (str): Nội dung HTML cần phân tích
+            base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
+
+        Returns:
+            List[CrawledImage]: Danh sách các hình ảnh đã trích xuất
+        """
+        return extract_images(html, base_url)
+
     @abstractmethod
-    async def crawl(self, url: str, **kwargs) -> CrawlResult:
+    async def crawl(self, url: str, **kwargs) -> PageCrawlResult:
         """
         Phương thức abstract để crawl một URL.
         Phải được implement bởi các class con.
@@ -389,7 +405,7 @@ class BaseCrawler(ABC):
             **kwargs: Additional parameters
 
         Returns:
-            CrawlResult: Kết quả crawl
+            PageCrawlResult: Kết quả crawl
         """
         pass
 

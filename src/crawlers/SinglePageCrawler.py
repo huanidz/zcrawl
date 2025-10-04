@@ -8,7 +8,7 @@ from typing import Optional
 from loguru import logger
 
 from ..browser.browser_config import BrowserConfig
-from ..models.CrawlResult import CrawlResult
+from ..models.CrawlResult import PageCrawlResult
 from .BaseCrawler import BaseCrawler
 
 
@@ -45,7 +45,7 @@ class SinglePageCrawler(BaseCrawler):
         timeout: Optional[int] = None,
         screenshot_path: Optional[str] = None,
         **kwargs,
-    ) -> CrawlResult:
+    ) -> PageCrawlResult:
         """
         Crawl một trang web và trả về nội dung HTML.
 
@@ -57,7 +57,7 @@ class SinglePageCrawler(BaseCrawler):
             **kwargs: Additional parameters
 
         Returns:
-            CrawlResult: Kết quả crawl với URL và HTML content
+            PageCrawlResult: Kết quả crawl với URL và HTML content
 
         Raises:
             RuntimeError: Nếu crawler chưa được khởi động
@@ -87,10 +87,14 @@ class SinglePageCrawler(BaseCrawler):
                 await self.take_screenshot(screenshot_path)
 
             # Tạo kết quả
-            result = CrawlResult(url=url, raw_html=html_content)
+            result = PageCrawlResult(url=url, raw_html=html_content)
 
             navigable_links = await self.extract_navigable_links(html_content, url)
             result.navigable_links = navigable_links
+            images = await self.extract_images(html_content, url)
+            result.images = images
+
+            # In kết quả
             logger.info(f"👉 result: {result.model_dump_json(indent=2)}")
 
             # logger.info(
