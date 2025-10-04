@@ -1,5 +1,5 @@
 """
-Module chứa class BaseCrawler - class cơ bản cho tất cả các crawler.
+Module chứa class BaseScraper - class cơ bản cho tất cả các Scraper.
 Cung cấp các chức năng chung và quản lý trình duyệt.
 """
 
@@ -13,14 +13,14 @@ from playwright.async_api import BrowserContext, Page, Response
 
 from ..browser.browser_config import BrowserConfig, ConfigType, get_browser_config
 from ..browser.browser_instance import BrowserInstance
-from ..models.CrawlResult import CrawledImage, NavigableLink, PageCrawlResult
+from ..models.ScrapingResult import NavigableLink, PageScrapeResult, ScrapedImage
 from ..utils.image import extract_images
 from ..utils.navigation import extract_navigable_links
 
 
-class BaseCrawler(ABC):
+class BaseScraper(ABC):
     """
-    Class cơ bản cho tất cả các crawler.
+    Class cơ bản cho tất cả các Scraper.
     Cung cấp các chức năng chung và quản lý trình duyệt.
     """
 
@@ -30,7 +30,7 @@ class BaseCrawler(ABC):
         auto_start: bool = True,
     ):
         """
-        Khởi tạo BaseCrawler.
+        Khởi tạo BaseScraper.
 
         Args:
             browser_config (Optional[BrowserConfig]): Cấu hình cho trình duyệt
@@ -47,7 +47,7 @@ class BaseCrawler(ABC):
 
     async def start(self) -> None:
         """
-        Khởi động crawler và trình duyệt.
+        Khởi động Scraper và trình duyệt.
         """
         if self._is_started:
             return
@@ -55,14 +55,14 @@ class BaseCrawler(ABC):
         try:
             await self._browser_instance.start()
             self._is_started = True
-            logger.info("BaseCrawler đã được khởi động")
+            logger.info("BaseScraper đã được khởi động")
         except Exception as e:
-            logger.error(f"Lỗi khi khởi động BaseCrawler: {e}")
+            logger.error(f"Lỗi khi khởi động BaseScraper: {e}")
             raise
 
     async def stop(self) -> None:
         """
-        Dừng crawler và trình duyệt.
+        Dừng Scraper và trình duyệt.
         """
         if not self._is_started:
             return
@@ -81,9 +81,9 @@ class BaseCrawler(ABC):
             # Dừng trình duyệt
             await self._browser_instance.stop()
             self._is_started = False
-            logger.info("BaseCrawler đã được dừng")
+            logger.info("BaseScraper đã được dừng")
         except Exception as e:
-            logger.error(f"Lỗi khi dừng BaseCrawler: {e}")
+            logger.error(f"Lỗi khi dừng BaseScraper: {e}")
             raise
 
     @property
@@ -95,19 +95,19 @@ class BaseCrawler(ABC):
             BrowserInstance: Browser instance
 
         Raises:
-            RuntimeError: Nếu crawler chưa được khởi động
+            RuntimeError: Nếu Scraper chưa được khởi động
         """
         if not self._is_started:
-            raise RuntimeError("Crawler chưa được khởi động. Gọi start() trước.")
+            raise RuntimeError("Scraper chưa được khởi động. Gọi start() trước.")
         return self._browser_instance
 
     @property
     def is_started(self) -> bool:
         """
-        Kiểm tra crawler đã được khởi động chưa.
+        Kiểm tra Scraper đã được khởi động chưa.
 
         Returns:
-            bool: True nếu crawler đã được khởi động
+            bool: True nếu Scraper đã được khởi động
         """
         return self._is_started
 
@@ -122,7 +122,7 @@ class BaseCrawler(ABC):
             BrowserContext: Browser context mới
         """
         if not self._is_started:
-            raise RuntimeError("Crawler chưa được khởi động. Gọi start() trước.")
+            raise RuntimeError("Scraper chưa được khởi động. Gọi start() trước.")
 
         # Đóng context cũ nếu có
         if self._context:
@@ -153,7 +153,7 @@ class BaseCrawler(ABC):
             Page: Page mới
         """
         if not self._is_started:
-            raise RuntimeError("Crawler chưa được khởi động. Gọi start() trước.")
+            raise RuntimeError("Scraper chưa được khởi động. Gọi start() trước.")
 
         context = await self.get_context()
 
@@ -381,7 +381,7 @@ class BaseCrawler(ABC):
 
     async def extract_images(
         self, html: str, base_url: Optional[str] = None
-    ) -> List[CrawledImage]:
+    ) -> List[ScrapedImage]:
         """
         Trích xuất tất cả các hình ảnh từ HTML.
 
@@ -390,22 +390,22 @@ class BaseCrawler(ABC):
             base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
 
         Returns:
-            List[CrawledImage]: Danh sách các hình ảnh đã trích xuất
+            List[ScrapedImage]: Danh sách các hình ảnh đã trích xuất
         """
         return extract_images(html, base_url)
 
     @abstractmethod
-    async def crawl(self, url: str, **kwargs) -> PageCrawlResult:
+    async def scrape(self, url: str, **kwargs) -> PageScrapeResult:
         """
-        Phương thức abstract để crawl một URL.
+        Phương thức abstract để scrape một URL.
         Phải được implement bởi các class con.
 
         Args:
-            url (str): URL để crawl
+            url (str): URL để scrape
             **kwargs: Additional parameters
 
         Returns:
-            PageCrawlResult: Kết quả crawl
+            PageScrapeResult: Kết quả scrape
         """
         pass
 

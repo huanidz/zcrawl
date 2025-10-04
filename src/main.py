@@ -5,7 +5,9 @@ import sys
 # Add the project root directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from src.crawlers.SinglePageCrawler import SinglePageCrawler
+from loguru import logger
+
+from src.scrapers import SimpleScraper
 from src.utils.installation import ensure_chromium_installed
 
 
@@ -18,13 +20,14 @@ async def main():
     print("Chromium driver is ready.")
 
     # Tạo SinglePageCrawler instance
-    crawler = SinglePageCrawler(auto_start=False)
+    scraper = SimpleScraper(auto_start=False)
 
     try:
         SAMPLE_URL = "https://vnexpress.net/can-bo-cong-chuc-khong-dap-ung-nhiem-vu-se-bi-cho-nghi-4947205.html"
         print(f"Đang crawl {SAMPLE_URL}...")
-        await crawler.start()
-        result = await crawler.crawl(SAMPLE_URL)
+        await scraper.start()
+        result = await scraper.scrape(SAMPLE_URL)
+        logger.info(f"👉 result: {result.model_dump_json(indent=2)}")
 
         # In kết quả
         print(f"URL: {result.url}")
@@ -34,8 +37,8 @@ async def main():
     except Exception as e:
         print(f"Lỗi khi crawl: {e}")
     finally:
-        # Dừng crawler
-        await crawler.stop()
+        # Dừng scraper
+        await scraper.stop()
         print("Crawler đã dừng.")
 
 

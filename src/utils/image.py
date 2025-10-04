@@ -8,10 +8,10 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from ..models.CrawlResult import CrawledImage
+from ..models.ScrapingResult import ScrapedImage
 
 
-def extract_images(html: str, base_url: Optional[str] = None) -> List[CrawledImage]:  # noqa
+def extract_images(html: str, base_url: Optional[str] = None) -> List[ScrapedImage]:  # noqa
     """
     Trích xuất tất cả các hình ảnh từ HTML.
 
@@ -20,7 +20,7 @@ def extract_images(html: str, base_url: Optional[str] = None) -> List[CrawledIma
         base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
 
     Returns:
-        List[CrawledImage]: Danh sách các hình ảnh đã trích xuất
+        List[ScrapedImage]: Danh sách các hình ảnh đã trích xuất
     """
     try:
         soup = BeautifulSoup(html, "lxml")
@@ -63,7 +63,7 @@ def extract_images(html: str, base_url: Optional[str] = None) -> List[CrawledIma
                 if figcaption:
                     caption = figcaption.get_text(strip=True)
 
-            # Tạo đối tượng CrawledImage
+            # Tạo đối tượng ScrapedImage
             try:
                 # Chuyển đổi width và height thành số nguyên nếu có
                 width_int = None
@@ -79,7 +79,7 @@ def extract_images(html: str, base_url: Optional[str] = None) -> List[CrawledIma
                     except (ValueError, TypeError):
                         pass
 
-                crawled_image = CrawledImage(
+                crawled_image = ScrapedImage(
                     url=src,
                     alt_text=alt,
                     parent_url=base_url,
@@ -90,7 +90,7 @@ def extract_images(html: str, base_url: Optional[str] = None) -> List[CrawledIma
                 )
                 images.append(crawled_image)
             except Exception as e:
-                logger.warning(f"Lỗi khi tạo CrawledImage cho URL '{src}': {e}")
+                logger.warning(f"Lỗi khi tạo ScrapedImage cho URL '{src}': {e}")
                 continue
 
         logger.info(f"Đã trích xuất {len(images)} hình ảnh từ HTML")

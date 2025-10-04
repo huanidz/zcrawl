@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 from loguru import logger
 
-from ..models.CrawlResult import NavigableLink
+from ..models.ScrapingResult import NavigableLink
 
 
 def extract_navigable_links(

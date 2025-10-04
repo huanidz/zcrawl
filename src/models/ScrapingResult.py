@@ -8,7 +8,7 @@ class NavigableLink(BaseModel):
     parent_url: Optional[AnyHttpUrl] = None
 
 
-class CrawledImage(BaseModel):
+class ScrapedImage(BaseModel):
     url: AnyHttpUrl  # URL tuyệt đối của ảnh
     alt_text: Optional[str] = None  # Thuộc tính alt từ HTML
     parent_url: Optional[AnyHttpUrl] = None  # Trang chứa ảnh
@@ -21,12 +21,12 @@ class CrawledImage(BaseModel):
 # ==================================================
 
 
-class PageCrawlResult(BaseModel):
+class PageScrapeResult(BaseModel):
     """
-    Single page crawl result
+    Single page scrape result
     """
 
     url: str
     raw_html: str
     navigable_links: List[NavigableLink] = []
-    images: List[CrawledImage] = []
+    images: List[ScrapedImage] = []
