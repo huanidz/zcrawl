@@ -47,9 +47,6 @@ class BrowserConfig(BaseModel):
     )
     proxy_password: Optional[str] = Field(default=None, description="Mật khẩu proxy")
 
-    # Cấu hình security
-    ignore_https_errors: bool = Field(default=True, description="Bỏ qua lỗi HTTPS")
-
     # Cấu hình timeouts
     timeout: int = Field(default=30000, description="Timeout mặc định (ms)")
 
@@ -73,7 +70,6 @@ class BrowserConfig(BaseModel):
         options = {
             "headless": self.headless,
             "devtools": self.devtools,
-            "ignore_https_errors": self.ignore_https_errors,
             "timeout": self.timeout,
             "args": self.args.copy(),
         }
@@ -97,7 +93,6 @@ class BrowserConfig(BaseModel):
         """
         options = {
             "viewport": {"width": self.viewport_width, "height": self.viewport_height},
-            "ignore_https_errors": self.ignore_https_errors,
         }
 
         # Thêm user agent nếu có
@@ -120,7 +115,6 @@ class BrowserConfig(BaseModel):
             viewport_width=1920,
             viewport_height=1080,
             user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            ignore_https_errors=True,
             timeout=30000,
             args=[
                 "--no-sandbox",
@@ -148,7 +142,6 @@ class BrowserConfig(BaseModel):
             viewport_width=1920,
             viewport_height=1080,
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            ignore_https_errors=True,
             timeout=60000,
             args=[
                 "--no-sandbox",
@@ -178,7 +171,6 @@ class BrowserConfig(BaseModel):
             devtools=True,
             viewport_width=1920,
             viewport_height=1080,
-            ignore_https_errors=True,
             timeout=60000,
             args=[
                 "--no-sandbox",
