@@ -2,11 +2,14 @@
 Module chứa lớp FilterChain để quản lý nhiều Filter.
 """
 
-from typing import Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Union
 
 from loguru import logger
 
 from .base import Filter
+
+if TYPE_CHECKING:
+    pass
 
 
 class FilterChain(Filter):

@@ -3,9 +3,12 @@ Module chứa lớp Filter cơ bản.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from loguru import logger
+
+if TYPE_CHECKING:
+    from .chain import FilterChain
 
 
 class Filter(ABC):
@@ -27,7 +30,7 @@ class Filter(ABC):
         """
         pass
 
-    def __and__(self, other: "Filter") -> "FilterChain":
+    def __and__(self, other: "Filter") -> FilterChain:
         """
         Toán tử AND để kết hợp với filter khác.
 
@@ -41,7 +44,7 @@ class Filter(ABC):
 
         return FilterChain(filters=[self, other], operator="and")
 
-    def __or__(self, other: "Filter") -> "FilterChain":
+    def __or__(self, other: "Filter") -> FilterChain:
         """
         Toán tử OR để kết hợp với filter khác.
 
@@ -55,7 +58,7 @@ class Filter(ABC):
 
         return FilterChain(filters=[self, other], operator="or")
 
-    def __invert__(self) -> "FilterChain":
+    def __invert__(self) -> FilterChain:
         """
         Toán tử NOT để đảo ngược kết quả filter.
 
