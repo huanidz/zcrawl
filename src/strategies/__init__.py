@@ -3,6 +3,7 @@ Package chứa các strategy cho crawler.
 """
 
 from .BaseStrategy import BaseStrategy
-from .SinglePageStrategy import SinglePageStrategy
+from .BFSCrawlingStrategy import BFSCrawlingStrategy
+from .DFSCrawlingStrategy import DFSCrawlingStrategy
 
-__all__ = ["BaseStrategy", "SinglePageStrategy"]
+__all__ = ["BaseStrategy", "DFSCrawlingStrategy", "BFSCrawlingStrategy"]

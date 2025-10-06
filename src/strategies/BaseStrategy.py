@@ -1,125 +1,215 @@
 """
-Module chứa class BaseStrategy - class cơ bản cho tất cả các strategy.
-Cung cấp interface chung cho các chiến lược crawl khác nhau.
+Module chứa BaseStrategy - class cơ bản cho tất cả các crawling strategies.
+Cung cấp các chức năng chung và interface cho các chiến lược crawling khác nhau.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Callable, List, Optional, Set
 
 from loguru import logger
 
+from ..models.CrawlingResult import CrawlingResult
 from ..models.ScrapingResult import PageScrapeResult
-from ..scrapers.BaseScraper import BaseCrawler
+from ..scrapers.BaseScraper import BaseScraper
 
 
 class BaseStrategy(ABC):
     """
-    Class cơ bản cho tất cả các strategy.
-    Cung cấp interface chung cho các chiến lược crawl khác nhau.
+    Class cơ bản cho tất cả các crawling strategies.
+    Cung cấp các chức năng chung và interface cho các chiến lược crawling khác nhau.
     """
 
-    def __init__(self, crawler: BaseCrawler, **kwargs):
+    def __init__(
+        self,
+        scraper: BaseScraper,
+        max_depth: int = 3,
+        max_pages: int = 100,
+        allowed_domains: Optional[List[str]] = None,
+        url_filter: Optional[Callable[[str], bool]] = None,
+        respect_robots_txt: bool = True,
+    ):
         """
         Khởi tạo BaseStrategy.
 
         Args:
-            crawler (BaseCrawler): Instance của crawler để sử dụng
-            **kwargs: Các tham số bổ sung cho strategy
+            scraper (BaseScraper): Scraper instance để sử dụng
+            max_depth (int): Độ sâu tối đa cho crawling
+            max_pages (int): Số trang tối đa để crawl
+            allowed_domains (Optional[List[str]]): Danh sách các domain được phép crawl
+            url_filter (Optional[Callable[[str], bool]]): Hàm filter để kiểm tra URL có hợp lệ không
+            respect_robots_txt (bool): Có tuân thủ robots.txt không
         """
-        self.crawler = crawler
-        self.config = kwargs
+        self.scraper = scraper
+        self.max_depth = max_depth
+        self.max_pages = max_pages
+        self.allowed_domains = allowed_domains or []
+        self.url_filter = url_filter
+        self.respect_robots_txt = respect_robots_txt
+
+        # Internal state
+        self._visited_urls: Set[str] = set()
+        self._failed_urls: Set[str] = set()
+        self._current_depth = 0
+        self._pages_crawled = 0
+        self._is_running = False
 
     @abstractmethod
-    async def run(self, url: str, **kwargs) -> PageScrapeResult:
+    async def crawl(self, start_url: str) -> CrawlingResult:
         """
-        Phương thức abstract để thực thi strategy.
+        Phương thức abstract để thực hiện crawling.
         Phải được implement bởi các class con.
 
         Args:
-            url (str): URL để crawl
-            **kwargs: Additional parameters
+            start_url (str): URL bắt đầu crawling
 
         Returns:
-            PageScrapeResult: Kết quả crawl
+            CrawlingResult: Kết quả crawling
         """
         pass
 
-    def get_config(self, key: str, default: Any = None) -> Any:
+    async def _scrape_page(self, url: str) -> Optional[PageScrapeResult]:
         """
-        Lấy giá trị config theo key.
+        Scrape một trang web sử dụng scraper.
 
         Args:
-            key (str): Key của config
-            default (Any): Giá trị mặc định nếu không tìm thấy
+            url (str): URL để scrape
 
         Returns:
-            Any: Giá trị config
+            Optional[PageScrapeResult]: Kết quả scrape, None nếu thất bại
         """
-        return self.config.get(key, default)
+        try:
+            logger.debug(f"Đang scrape trang: {url}")
+            result = await self.scraper.scrape(url)
+            self._visited_urls.add(url)
+            self._pages_crawled += 1
+            logger.debug(f"Đã scrape thành công trang: {url}")
+            return result
+        except Exception as e:
+            logger.error(f"Lỗi khi scrape trang {url}: {e}")
+            self._failed_urls.add(url)
+            return None
 
-    def set_config(self, key: str, value: Any) -> None:
+    def _extract_links(self, page_result: PageScrapeResult) -> List[str]:
         """
-        Đặt giá trị config.
-
-        Args:
-            key (str): Key của config
-            value (Any): Giá trị cần đặt
-        """
-        self.config[key] = value
-
-    def update_config(self, **kwargs) -> None:
-        """
-        Cập nhật nhiều config cùng lúc.
-
-        Args:
-            **kwargs: Các cặp key-value cần cập nhật
-        """
-        self.config.update(kwargs)
-
-    async def validate_url(self, url: str) -> bool:
-        """
-        Kiểm tra URL có hợp lệ cho strategy này không.
+        Trích xuất các liên kết từ kết quả scrape.
 
         Args:
-            url (str): URL cần kiểm tra
+            page_result (PageScrapeResult): Kết quả scrape của trang
 
         Returns:
-            bool: True nếu URL hợp lệ
+            List[str]: Danh sách các liên kết đã được lọc
         """
-        # Implementation mặc định, có thể override ở class con
-        return bool(url) and url.startswith(("http://", "https://"))
+        links = []
 
-    async def prepare_crawl(self, url: str, **kwargs) -> Dict[str, Any]:
+        for link in page_result.navigable_links:
+            url = str(link.url)
+            links.append(url)
+
+        return links
+
+    def _should_continue_crawling(self) -> bool:
         """
-        Chuẩn bị trước khi crawl.
-
-        Args:
-            url (str): URL sẽ crawl
-            **kwargs: Additional parameters
+        Kiểm tra xem có nên tiếp tục crawling không.
 
         Returns:
-            Dict[str, Any]: Các tham số đã được chuẩn bị
+            bool: True nếu nên tiếp tục
         """
-        logger.debug(f"Chuẩn bị crawl URL: {url}")
+        if self._pages_crawled >= self.max_pages:
+            logger.info(f"Đạt giới hạn số trang ({self.max_pages})")
+            return False
 
-        # Kết hợp config từ strategy và tham số truyền vào
-        prepared_params = self.config.copy()
-        prepared_params.update(kwargs)
+        if self._current_depth >= self.max_depth:
+            logger.info(f"Đạt giới hạn độ sâu ({self.max_depth})")
+            return False
 
-        return prepared_params
+        return True
 
-    async def post_process(
-        self, result: PageScrapeResult, **kwargs
-    ) -> PageScrapeResult:
+    def _reset_state(self) -> None:
         """
-        Xử lý sau khi crawl.
+        Reset trạng thái internal cho một lần crawling mới.
+        """
+        self._visited_urls.clear()
+        self._failed_urls.clear()
+        self._current_depth = 0
+        self._pages_crawled = 0
+        self._is_running = False
+
+    def _create_crawling_result(
+        self, start_url: str, strategy_name: str
+    ) -> CrawlingResult:
+        """
+        Tạo CrawlingResult từ trạng thái hiện tại.
 
         Args:
-            result (PageScrapeResult): Kết quả crawl
-            **kwargs: Additional parameters
+            start_url (str): URL bắt đầu
+            strategy_name (str): Tên strategy
 
         Returns:
-            PageScrapeResult: Kết quả sau khi xử lý
+            CrawlingResult: Kết quả crawling
         """
-        logger.debug(f"Hoàn thành crawl URL: {result.url}")
+        result = CrawlingResult(
+            start_url=start_url,
+            max_depth=self._current_depth,
+            strategy=strategy_name,
+            visited_urls=list(self._visited_urls),
+            failed_urls=list(self._failed_urls),
+        )
+
         return result
+
+    async def stop(self) -> None:
+        """
+        Dừng quá trình crawling.
+        """
+        self._is_running = False
+        logger.info("Đã yêu cầu dừng crawling")
+
+    @property
+    def is_running(self) -> bool:
+        """
+        Kiểm tra xem strategy đang chạy không.
+
+        Returns:
+            bool: True nếu đang chạy
+        """
+        return self._is_running
+
+    @property
+    def visited_urls(self) -> Set[str]:
+        """
+        Lấy danh sách các URL đã visit.
+
+        Returns:
+            Set[str]: Set các URL đã visit
+        """
+        return self._visited_urls.copy()
+
+    @property
+    def failed_urls(self) -> Set[str]:
+        """
+        Lấy danh sách các URL thất bại.
+
+        Returns:
+            Set[str]: Set các URL thất bại
+        """
+        return self._failed_urls.copy()
+
+    @property
+    def pages_crawled(self) -> int:
+        """
+        Lấy số trang đã crawl.
+
+        Returns:
+            int: Số trang đã crawl
+        """
+        return self._pages_crawled
+
+    @property
+    def current_depth(self) -> int:
+        """
+        Lấy độ sâu hiện tại.
+
+        Returns:
+            int: Độ sâu hiện tại
+        """
+        return self._current_depth
