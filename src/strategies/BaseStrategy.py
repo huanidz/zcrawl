@@ -104,11 +104,9 @@ class BaseStrategy(ABC):
 
         for link in page_result.navigable_links:
             url = str(link.url)
-            # Bỏ qua các liên kết có độ sâu vượt quá giới hạn
-            if link.current_depth >= self.max_depth:
-                logger.debug(f"Bỏ qua liên kết {url} do vượt quá độ sâu tối đa ({self.max_depth})")
-                continue
-            links.append(url)
+            # Chỉ thêm liên kết nếu chưa được visit
+            if url not in self._visited_urls:
+                links.append(url)
 
         return links
 
@@ -121,10 +119,6 @@ class BaseStrategy(ABC):
         """
         if self._pages_crawled >= self.max_pages:
             logger.info(f"Đạt giới hạn số trang ({self.max_pages})")
-            return False
-
-        if self._current_depth >= self.max_depth:
-            logger.info(f"Đạt giới hạn độ sâu ({self.max_depth})")
             return False
 
         return True

@@ -100,18 +100,16 @@ class DFSCrawlingStrategy(BaseStrategy):
         # Thêm kết quả vào crawling result
         result.add_scraped_page(page_result)
 
-        # Nếu đạt độ sâu tối đa, không crawl các liên kết con
-        if depth >= self.max_depth:
-            logger.debug(f"Đạt độ sâu tối đa ({self.max_depth}) tại URL: {url}")
-            return
-
         # Trích xuất các liên kết từ trang
         links = self._extract_links(page_result)
         logger.debug(f"Tìm thấy {len(links)} liên kết từ {url}")
 
-        # Crawl các liên kết theo DFS (đệ quy)
-        for link in links:
-            if not self._is_running or not self._should_continue_crawling():
-                break
+        # Crawl các liên kết theo DFS (đệ quy), nhưng chỉ nếu chưa vượt quá max_depth
+        if depth < self.max_depth:
+            for link in links:
+                if not self._is_running or not self._should_continue_crawling():
+                    break
 
-            await self._dfs_crawl(link, result, depth + 1)
+                await self._dfs_crawl(link, result, depth + 1)
+        else:
+            logger.debug(f"Đạt độ sâu tối đa ({self.max_depth}) tại URL: {url}")

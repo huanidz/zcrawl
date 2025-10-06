@@ -89,18 +89,13 @@ class BFSCrawlingStrategy(BaseStrategy):
             # Thêm kết quả vào crawling result
             result.add_scraped_page(page_result)
 
-            # Nếu đạt độ sâu tối đa, không thêm các liên kết con vào queue
-            if depth >= self.max_depth:
-                logger.debug(f"Đạt độ sâu tối đa ({self.max_depth}) tại URL: {url}")
-                continue
-
             # Trích xuất các liên kết từ trang
             links = self._extract_links(page_result)
             logger.debug(f"Tìm thấy {len(links)} liên kết từ {url}")
 
-            # Thêm các liên kết vào queue với độ sâu + 1
+            # Thêm các liên kết vào queue với độ sâu + 1, nhưng chỉ nếu chưa vượt quá max_depth
             for link in links:
-                if link not in self._visited_urls and link not in queued_urls:
+                if link not in self._visited_urls and link not in queued_urls and depth < self.max_depth:
                     queue.append((link, depth + 1))
                     queued_urls.add(link)
 

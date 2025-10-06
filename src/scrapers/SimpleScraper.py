@@ -20,20 +20,14 @@ class SimpleScraper(BaseScraper):
     def __init__(
         self,
         browser_config=None,
-        remove_script: bool = False,
-        remove_icons: bool = False,
     ):
         """
         Khởi tạo SimpleScraper.
 
         Args:
             browser_config: Cấu hình cho trình duyệt (từ BaseScraper)
-            remove_script (bool): Có loại bỏ script tags khỏi HTML không (default: False)
-            remove_icons (bool): Có loại bỏ SVG icons khỏi HTML không (default: False)
         """
         super().__init__(browser_config)
-        self.remove_script = remove_script
-        self.remove_icons = remove_icons
 
     async def scrape(self, url: str, **kwargs) -> PageScrapeResult:
         """
