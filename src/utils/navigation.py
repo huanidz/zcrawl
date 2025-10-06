@@ -12,7 +12,7 @@ from ..models.ScrapingResult import NavigableLink
 
 
 def extract_navigable_links(
-    html: str, base_url: Optional[str] = None
+    html: str, base_url: Optional[str] = None, current_depth: int = 0
 ) -> List[NavigableLink]:
     """
     Trích xuất tất cả các liên kết có thể điều hướng từ HTML.
@@ -20,6 +20,7 @@ def extract_navigable_links(
     Args:
         html (str): Nội dung HTML cần phân tích
         base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
+        current_depth (int): Độ sâu hiện tại của liên kết
 
     Returns:
         List[NavigableLink]: Danh sách các liên kết có thể điều hướng
@@ -63,7 +64,7 @@ def extract_navigable_links(
             try:
                 if href == base_url:
                     continue
-                navigable_link = NavigableLink(url=href, text=text, parent_url=base_url)
+                navigable_link = NavigableLink(url=href, text=text, parent_url=base_url, current_depth=current_depth)
                 links.append(navigable_link)
             except Exception as e:
                 logger.warning(f"Lỗi khi tạo NavigableLink cho URL '{href}': {e}")

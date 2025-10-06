@@ -27,14 +27,12 @@ class BaseScraper(ABC):
     def __init__(
         self,
         browser_config: Optional[BrowserConfig] = None,
-        auto_start: bool = True,
     ):
         """
         Khởi tạo BaseScraper.
 
         Args:
             browser_config (Optional[BrowserConfig]): Cấu hình cho trình duyệt
-            auto_start (bool): Tự động khởi động trình duyệt sau khi tạo
         """
         self.browser_config = browser_config or get_browser_config(ConfigType.DEFAULT)
         self._browser_instance = BrowserInstance(self.browser_config)
@@ -43,10 +41,6 @@ class BaseScraper(ABC):
         self._current_page: Optional[Page] = None
         self._startup_task = None
 
-        if auto_start:
-            # Không sử dụng asyncio.create_task() trong constructor
-            # Thay vào đó, sẽ gọi start() một cách tường minh khi cần
-            pass
 
     async def start(self) -> None:
         """
@@ -377,7 +371,7 @@ class BaseScraper(ABC):
         return await page.wait_for_load_state(wait_until, timeout=actual_timeout)
 
     async def extract_navigable_links(
-        self, html: str, base_url: Optional[str] = None
+        self, html: str, base_url: Optional[str] = None, current_depth: int = 0
     ) -> List[NavigableLink]:
         """
         Trích xuất tất cả các liên kết có thể điều hướng từ HTML.
@@ -385,11 +379,12 @@ class BaseScraper(ABC):
         Args:
             html (str): Nội dung HTML cần phân tích
             base_url (Optional[str]): URL để giải quyết các liên kết tương đối
+            current_depth (int): Độ sâu hiện tại của liên kết
 
         Returns:
             List[NavigableLink]: Danh sách các liên kết có thể điều hướng
         """
-        return extract_navigable_links(html, base_url)
+        return extract_navigable_links(html, base_url, current_depth)
 
     async def extract_images(
         self, html: str, base_url: Optional[str] = None

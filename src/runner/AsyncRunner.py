@@ -3,6 +3,8 @@ Module chứa AsyncRunner - class để thực thi crawling sessions trên một
 """
 
 import asyncio
+import json
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from loguru import logger
@@ -25,7 +27,6 @@ class AsyncRunner:
         strategy: BaseStrategy,
         scraper: Optional[BaseScraper] = None,
         browser_config: Optional[BrowserConfig] = None,
-        auto_start: bool = True,
     ):
         """
         Khởi tạo AsyncRunner.
@@ -52,11 +53,6 @@ class AsyncRunner:
         self._current_result: Optional[CrawlingResult] = None
         self._progress_callback: Optional[Callable[[CrawlingResult], None]] = None
         self._startup_task = None
-
-        if auto_start:
-            # Không sử dụng asyncio.create_task() trong constructor
-            # Thay vào đó, sẽ gọi start() một cách tường minh khi cần
-            pass
 
     async def start(self) -> None:
         """
@@ -238,3 +234,32 @@ class AsyncRunner:
         Async context manager exit.
         """
         await self.stop()
+
+    async def save_result_to_json(self, file_path: str) -> None:
+        """
+        Lưu kết quả crawling hiện tại ra file JSON.
+        
+        Args:
+            file_path (str): Đường dẫn đến file JSON để lưu kết quả
+        """
+        if not self._current_result:
+            logger.warning("Không có kết quả nào để lưu")
+            return
+        
+        try:
+            # Chuyển đổi kết quả thành dictionary có thể serialize
+            result_dict = self._current_result.model_dump()
+            
+            # Tạo thư mục nếu chưa tồn tại
+            path = Path(file_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Ghi kết quả ra file JSON
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(result_dict, f, ensure_ascii=False, indent=2, default=str)
+            
+            logger.info(f"Đã lưu kết quả crawling vào file: {file_path}")
+            
+        except Exception as e:
+            logger.error(f"Lỗi khi lưu kết quả ra file JSON: {e}")
+            raise

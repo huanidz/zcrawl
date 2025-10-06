@@ -67,19 +67,20 @@ class BaseStrategy(ABC):
         """
         pass
 
-    async def _scrape_page(self, url: str) -> Optional[PageScrapeResult]:
+    async def _scrape_page(self, url: str, current_depth: int = 0) -> Optional[PageScrapeResult]:
         """
         Scrape một trang web sử dụng scraper.
 
         Args:
             url (str): URL để scrape
+            current_depth (int): Độ sâu hiện tại của trang
 
         Returns:
             Optional[PageScrapeResult]: Kết quả scrape, None nếu thất bại
         """
         try:
-            logger.debug(f"Đang scrape trang: {url}")
-            result = await self.scraper.scrape(url)
+            logger.debug(f"Đang scrape trang: {url} ở độ sâu {current_depth}")
+            result = await self.scraper.scrape(url, current_depth=current_depth)
             self._visited_urls.add(url)
             self._pages_crawled += 1
             logger.debug(f"Đã scrape thành công trang: {url}")
@@ -103,6 +104,10 @@ class BaseStrategy(ABC):
 
         for link in page_result.navigable_links:
             url = str(link.url)
+            # Bỏ qua các liên kết có độ sâu vượt quá giới hạn
+            if link.current_depth >= self.max_depth:
+                logger.debug(f"Bỏ qua liên kết {url} do vượt quá độ sâu tối đa ({self.max_depth})")
+                continue
             links.append(url)
 
         return links

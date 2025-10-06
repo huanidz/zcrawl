@@ -21,7 +21,7 @@ async def demo_async_runner():
     
     try:
         # Tạo scraper
-        scraper = SimpleScraper(auto_start=False)
+        scraper = SimpleScraper()
         
         # Tạo DFS strategy
         dfs_strategy = DFSCrawlingStrategy(
@@ -29,23 +29,23 @@ async def demo_async_runner():
             max_depth=2,
             max_pages=5
         )
+
+        bfs_strategy = BFSCrawlingStrategy(
+            scraper=scraper,
+            max_depth=2,
+            max_pages=5,
+            respect_robots_txt=False
+        )
         
         # Tạo AsyncRunner với auto_start=False để tránh asyncio.create_task() trong constructor
-        async with AsyncRunner(strategy=dfs_strategy, scraper=scraper, auto_start=False) as runner:
+        async with AsyncRunner(strategy=bfs_strategy, scraper=scraper) as runner:
             # Crawl một URL
-            SAMPLE_URL = "https://vnexpress.net/ong-chu-chatgpt-tiet-lo-cong-viec-se-lam-neu-bi-ai-thay-the-4947310.html"
+            SAMPLE_URL = "https://example.com/"
             print(f"Đang crawl với AsyncRunner (DFS strategy): {SAMPLE_URL}")
             
             # Thực thi crawling
-            result = await runner.run(SAMPLE_URL)
-            
-            # In kết quả
-            print(f"✅ Hoàn thành crawling!")
-            print(f"📄 Tổng số trang: {result.total_pages}")
-            print(f"🔗 Tổng số liên kết: {len(result.get_all_links())}")
-            print(f"🖼️ Tổng số hình ảnh: {len(result.get_all_images())}")
-            print(f"⏱️ Thời gian thực hiện: {result.duration:.2f} giây")
-            print(f"📈 Tỷ lệ thành công: {result.success_rate:.2%}")
+            await runner.run(SAMPLE_URL)
+            await runner.save_result_to_json(file_path="result.json")
             
             # In thống kê từ runner
             stats = runner.get_stats()
@@ -138,10 +138,8 @@ async def main():
         print("HOÀN TẤT TẤT CẢ DEMOS")
         print("="*50)
     except KeyboardInterrupt:
-        print("\n⚠️ Chương trình bị ngắt bởi người dùng.")
         logger.info("Chương trình bị ngắt bởi người dùng")
     except Exception as e:
-        print(f"\n❌ Lỗi không mong muốn: {e}")
         logger.error(f"Lỗi không mong muốn: {e}")
     finally:
         # Đảm bảo cleanup tất cả resources

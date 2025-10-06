@@ -6,6 +6,7 @@ class NavigableLink(BaseModel):
     url: AnyHttpUrl
     text: Optional[str] = None
     parent_url: Optional[AnyHttpUrl] = None
+    current_depth: int = 0
 
 
 class ScrapedImage(BaseModel):
@@ -28,5 +29,6 @@ class PageScrapeResult(BaseModel):
 
     url: str
     raw_html: str
+    fit_html: str
     navigable_links: List[NavigableLink] = []
     images: List[ScrapedImage] = []

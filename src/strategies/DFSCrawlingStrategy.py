@@ -93,7 +93,7 @@ class DFSCrawlingStrategy(BaseStrategy):
         self._current_depth = max(self._current_depth, depth)
 
         # Scrape trang hiện tại
-        page_result = await self._scrape_page(url)
+        page_result = await self._scrape_page(url, depth)
         if page_result is None:
             return
 
