@@ -1,4 +1,5 @@
 import asyncio
+import signal
 import sys
 from typing import List
 
@@ -29,8 +30,8 @@ async def demo_async_runner():
             max_pages=5
         )
         
-        # Tạo AsyncRunner
-        async with AsyncRunner(strategy=dfs_strategy, scraper=scraper) as runner:
+        # Tạo AsyncRunner với auto_start=False để tránh asyncio.create_task() trong constructor
+        async with AsyncRunner(strategy=dfs_strategy, scraper=scraper, auto_start=False) as runner:
             # Crawl một URL
             SAMPLE_URL = "https://vnexpress.net/ong-chu-chatgpt-tiet-lo-cong-viec-se-lam-neu-bi-ai-thay-the-4947310.html"
             print(f"Đang crawl với AsyncRunner (DFS strategy): {SAMPLE_URL}")
@@ -65,9 +66,9 @@ async def demo_async_many_runner():
     try:
         # URLs để crawl
         urls = [
-            "https://vnexpress.net/",
-            "https://tuoitre.vn/",
-            "https://thanhnien.vn/"
+            # "https://vnexpress.net/",
+            "https://vnexpress.net/ong-chu-chatgpt-tiet-lo-cong-viec-se-lam-neu-bi-ai-thay-the-4947310.html",
+            # "https://thanhnien.vn/"
         ]
         
         # Tạo strategy factory
@@ -76,13 +77,15 @@ async def demo_async_many_runner():
             return BFSCrawlingStrategy(
                 scraper=scraper,
                 max_depth=1,
-                max_pages=3
+                max_pages=3,
+                respect_robots_txt=False
             )
         
-        # Tạo AsyncManyRunner
+        # Tạo AsyncManyRunner với auto_start=False để tránh asyncio.create_task() trong constructor
         async with AsyncManyRunner(
             strategy_factory=bfs_strategy_factory,
-            max_concurrent=2
+            max_concurrent=2,
+            auto_start=False
         ) as runner:
             print(f"Đang crawl {len(urls)} URLs với AsyncManyRunner (BFS strategy)...")
             
@@ -124,21 +127,58 @@ async def main():
     print("Starting web crawler...")
     print("Chromium driver is ready.")
     
-    # Demo AsyncRunner
-    await demo_async_runner()
+    try:
+        # Demo AsyncRunner
+        await demo_async_runner()
+        
+        # Demo AsyncManyRunner
+        # await demo_async_many_runner()
+        
+        print("\n" + "="*50)
+        print("HOÀN TẤT TẤT CẢ DEMOS")
+        print("="*50)
+    except KeyboardInterrupt:
+        print("\n⚠️ Chương trình bị ngắt bởi người dùng.")
+        logger.info("Chương trình bị ngắt bởi người dùng")
+    except Exception as e:
+        print(f"\n❌ Lỗi không mong muốn: {e}")
+        logger.error(f"Lỗi không mong muốn: {e}")
+    finally:
+        # Đảm bảo cleanup tất cả resources
+        print("\n🧹 Đang dọn dẹp resources...")
+        await asyncio.sleep(0.1)  # Cho phép các task cleanup hoàn thành
+        print("✅ Cleanup hoàn tất.")
+
+
+def setup_signal_handlers():
+    """
+    Thiết lập signal handlers để xử lý việc đóng chương trình một cách an toàn.
+    """
+    def signal_handler(sig, frame):
+        print(f"\n⚠️ Nhận được signal {sig}. Đang đóng chương trình một cách an toàn...")
+        sys.exit(0)
     
-    # Demo AsyncManyRunner
-    # await demo_async_many_runner()
-    
-    print("\n" + "="*50)
-    print("HOÀN TẤT TẤT CẢ DEMOS")
-    print("="*50)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
 
 if __name__ == "__main__":
+    # Thiết lập signal handlers
+    setup_signal_handlers()
+    
     # Ensure Chromium is installed
     if not ensure_chromium_installed():
         print("Failed to install Chromium. Exiting...")
         sys.exit(1)
 
-    asyncio.run(main())
+    # Chạy main với proper event loop handling
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n⚠️ Chương trình bị ngắt bởi người dùng.")
+    except Exception as e:
+        print(f"\n❌ Lỗi nghiêm trọng: {e}")
+        logger.error(f"Lỗi nghiêm trọng: {e}")
+        sys.exit(1)
+    finally:
+        print("👋 Chương trình đã kết thúc.")

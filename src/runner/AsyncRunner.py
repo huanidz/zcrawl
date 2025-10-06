@@ -51,9 +51,12 @@ class AsyncRunner:
         self._is_started = False
         self._current_result: Optional[CrawlingResult] = None
         self._progress_callback: Optional[Callable[[CrawlingResult], None]] = None
+        self._startup_task = None
 
         if auto_start:
-            asyncio.create_task(self.start())
+            # Không sử dụng asyncio.create_task() trong constructor
+            # Thay vào đó, sẽ gọi start() một cách tường minh khi cần
+            pass
 
     async def start(self) -> None:
         """
@@ -78,6 +81,15 @@ class AsyncRunner:
             return
 
         try:
+            # Hủy startup task nếu vẫn đang chạy
+            if self._startup_task and not self._startup_task.done():
+                self._startup_task.cancel()
+                try:
+                    await self._startup_task
+                except asyncio.CancelledError:
+                    pass
+                self._startup_task = None
+
             # Dừng strategy nếu đang chạy
             if hasattr(self.strategy, "stop"):
                 await self.strategy.stop()

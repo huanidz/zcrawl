@@ -57,16 +57,21 @@ class BrowserInstance:
         if not self._is_started:
             return
 
-        if self._browser:
-            await self._browser.close()
-            self._browser = None
+        try:
+            if self._browser:
+                await self._browser.close()
+                self._browser = None
 
-        if self._playwright:
-            await self._playwright.stop()
-            self._playwright = None
+            if self._playwright:
+                await self._playwright.stop()
+                self._playwright = None
 
-        self._browser_type = None
-        self._is_started = False
+            self._browser_type = None
+            self._is_started = False
+        except Exception as e:
+            # Log lỗi nhưng không raise để đảm bảo cleanup hoàn tất
+            from loguru import logger
+            logger.warning(f"Lỗi khi dừng browser instance: {e}")
 
     @property
     def browser(self) -> Browser:

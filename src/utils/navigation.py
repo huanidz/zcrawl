@@ -3,7 +3,7 @@ Module chứa các hàm tiện ích cho việc điều hướng và trích xuấ
 """
 
 from typing import List, Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from bs4 import BeautifulSoup
 from loguru import logger
@@ -27,6 +27,9 @@ def extract_navigable_links(
     try:
         soup = BeautifulSoup(html, "lxml")
         links = []
+        
+        # Các scheme hợp lệ cho web navigation
+        valid_schemes = {"http", "https"}
 
         # Tìm tất cả các thẻ <a> có thuộc tính href
         for a_tag in soup.find_all("a", href=True):
@@ -37,9 +40,16 @@ def extract_navigable_links(
             if not href or href.startswith("#"):
                 continue
 
-            # Bỏ qua các liên kết javascript:void(0) và mailto:
-            if href.startswith("javascript:") or href.startswith("mailto:"):
-                continue
+            # Kiểm tra scheme nếu URL có scheme
+            if ":" in href:
+                try:
+                    parsed = urlparse(href)
+                    # Nếu có scheme và không phải http/https thì bỏ qua
+                    if parsed.scheme and parsed.scheme not in valid_schemes:
+                        continue
+                except Exception as e:
+                    logger.warning(f"Lỗi khi parse URL '{href}': {e}")
+                    continue
 
             # Chuyển đổi liên kết tương đối thành tuyệt đối nếu có base_url
             if base_url and not href.startswith(("http://", "https://")):

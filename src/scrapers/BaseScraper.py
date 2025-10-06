@@ -41,9 +41,12 @@ class BaseScraper(ABC):
         self._is_started = False
         self._context: Optional[BrowserContext] = None
         self._current_page: Optional[Page] = None
+        self._startup_task = None
 
         if auto_start:
-            asyncio.create_task(self.start())
+            # Không sử dụng asyncio.create_task() trong constructor
+            # Thay vào đó, sẽ gọi start() một cách tường minh khi cần
+            pass
 
     async def start(self) -> None:
         """
@@ -68,6 +71,15 @@ class BaseScraper(ABC):
             return
 
         try:
+            # Hủy startup task nếu vẫn đang chạy
+            if self._startup_task and not self._startup_task.done():
+                self._startup_task.cancel()
+                try:
+                    await self._startup_task
+                except asyncio.CancelledError:
+                    pass
+                self._startup_task = None
+
             # Đóng page hiện tại nếu có
             if self._current_page:
                 await self._current_page.close()
@@ -372,7 +384,7 @@ class BaseScraper(ABC):
 
         Args:
             html (str): Nội dung HTML cần phân tích
-            base_url (Optional[str]): URL cơ sở để giải quyết các liên kết tương đối
+            base_url (Optional[str]): URL để giải quyết các liên kết tương đối
 
         Returns:
             List[NavigableLink]: Danh sách các liên kết có thể điều hướng

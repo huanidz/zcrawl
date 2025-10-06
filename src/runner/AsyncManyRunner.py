@@ -61,9 +61,12 @@ class AsyncManyRunner:
         self._results: List[CrawlingResult] = []
         self._progress_callback: Optional[Callable[[List[CrawlingResult]], None]] = None
         self._semaphore = asyncio.Semaphore(max_concurrent)
+        self._startup_task = None
 
         if auto_start:
-            asyncio.create_task(self.start())
+            # Không sử dụng asyncio.create_task() trong constructor
+            # Thay vào đó, sẽ gọi start() một cách tường minh khi cần
+            pass
 
     async def start(self) -> None:
         """
@@ -93,6 +96,15 @@ class AsyncManyRunner:
             return
 
         try:
+            # Hủy startup task nếu vẫn đang chạy
+            if self._startup_task and not self._startup_task.done():
+                self._startup_task.cancel()
+                try:
+                    await self._startup_task
+                except asyncio.CancelledError:
+                    pass
+                self._startup_task = None
+
             # Dừng tất cả runners
             tasks = [runner.stop() for runner in self._runners]
             if tasks:

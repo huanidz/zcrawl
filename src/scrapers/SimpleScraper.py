@@ -46,15 +46,10 @@ class SimpleScraper(BaseScraper):
             result = PageScrapeResult(url=url, raw_html=html)
 
             # Trích xuất liên kết nếu được yêu cầu
-            logger.debug("Trích xuất liên kết từ trang")
             result.navigable_links = await self.extract_navigable_links(html, url)
-            logger.info(f"Đã trích xuất {len(result.navigable_links)} liên kết")
 
-            logger.debug("Trích xuất hình ảnh từ trang")
             result.images = await self.extract_images(html, url)
-            logger.info(f"Đã trích xuất {len(result.images)} hình ảnh")
 
-            logger.info(f"Hoàn thành scrape URL: {url}")
             return result
 
         except Exception as e:
